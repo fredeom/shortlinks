@@ -1,0 +1,76 @@
+package views
+
+import (
+    "github.com/fredeom/shortlinks/services"
+    "strconv"
+)
+
+templ Index(p services.Page) {
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <link rel="stylesheet" href="/css/index.css" />
+            <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+        </head>
+        <body>
+            @Form(p.Form)
+            <hr />
+            @Display(p.Data)
+            <script>
+                document.addEventListener("DOMContentLoaded", (event) => {
+                    document.body.addEventListener("htmx:beforeSwap", function(evt) {
+                        if (evt.detail.xhr.status === 422) {
+                            evt.detail.shouldSwap = true
+                            evt.detail.isError = false
+                        }
+                    })
+                })
+            </script>
+        </body>
+    </html>
+}
+
+templ Form(f services.FormData) {
+    <form hx-post="/form">
+        Full link:
+        <input type="text" value={f.Values["fulllink"]} name="fulllink" />
+        if _, ok := f.Errors["fulllink"]; ok {
+            <div style="color: red">{ f.Errors["fulllink"] }</div>
+        }
+        <button type="submit">Create Short Link</button>
+    </form>
+}
+
+templ Display(d services.Data) {
+    <div id="links" style="display: flex; flex-direction: column">
+        for _, link := range d.Links {
+            @Link(link)
+        }
+    </div>
+}
+
+templ Link(l services.Link) {
+    <div class="link" id={"link-" + strconv.Itoa(l.Id)} style="display: flex">
+        <div hx-delete={"/links/" + strconv.Itoa(l.Id)}
+             hx-swap="outerHTML swap:500ms"
+             hx-target={"#link-" + strconv.Itoa(l.Id)}
+             hx-indicator={"#ci-" + strconv.Itoa(l.Id)}
+             style="width: 1rem; cursor: pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path fill="none" d="M0 0h24v24H0z"/>
+                <path d="M4 2h16a1 1 0 011 1v1a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1zM3 6h18v16a1 1 0 01-1 1H4a1 1 0 01-1-1V6zm3 3v9a1 1 0 002 0v-9a1 1 0 00-2 0zm5 0v9a1 1 0 002 0v-9a1 1 0 00-2 0zm5 0v9a1 1 0 002 0v-9a1 1 0 00-2 0z"/>
+            </svg>
+        </div>
+        Full: <a href={ templ.URL(l.Full) } target="_blank">{ l.Full }</a>&nbsp;&nbsp;&nbsp;
+        Short: <a href={ templ.URL(l.Short) } target="_blank">{ l.Short }</a>
+        <div id={"ci-" + strconv.Itoa(l.Id)} class="htmx-indicator">
+          <img src="/images/bars.svg" alt="loading" style="width: 1rem" />
+        </div>
+    </div>
+}
+
+templ OobLink(l services.Link) {
+    <div id="links" hx-swap-oob="afterbegin">
+        @Link(l)
+   </div>
+}
