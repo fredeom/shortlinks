@@ -1,0 +1,67 @@
+{{ block "index" . }}
+<html>
+    <head>
+        <link rel="stylesheet" href="/css/index.css">
+        <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+    </head>
+    <body>
+        {{ template "form" .Form }}
+        <hr />
+        {{ template "display" .Data }}
+        <script>
+            document.addEventListener("DOMContentLoaded", (event) => {
+                document.body.addEventListener("htmx:beforeSwap", function(evt) {
+                    if (evt.detail.xhr.status === 422) {
+                        evt.detail.shouldSwap = true
+                        evt.detail.isError = false
+                    }
+                })
+            })
+        </script>
+    </body>
+</html>
+{{ end }}
+
+{{ block "form" .}}
+<form hx-post="/form">
+    Full link: <input type="text" {{if .Values.fulllink }} value="{{ .Values.fulllink }}" {{ end }} name="fulllink" />
+    {{ if .Errors.fulllink }}
+      <div style="color: red">{{ .Errors.fulllink }}</div>
+    {{ end }}
+    <button type="submit">Create Short Link</button>
+</form>
+{{ end }}
+
+{{ block "display" . }}
+    <div id="links" style="display: flex; flex-direction: column">
+    {{ range .Links }}
+        {{ template "link" . }}
+    {{ end }}
+    </div>
+{{ end }}
+
+{{ block "link" . }}
+    <div class="link" id="link-{{ .Id }}" style="display: flex">
+        <div hx-delete="/links/{{ .Id }}"
+             hx-swap="outerHTML swap:500ms"
+             hx-target="#link-{{ .Id }}"
+             hx-indicator="#ci-{{ .Id }}"
+             style="width: 1rem; cursor: pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path fill="none" d="M0 0h24v24H0z"/>
+                <path d="M4 2h16a1 1 0 011 1v1a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1zM3 6h18v16a1 1 0 01-1 1H4a1 1 0 01-1-1V6zm3 3v9a1 1 0 002 0v-9a1 1 0 00-2 0zm5 0v9a1 1 0 002 0v-9a1 1 0 00-2 0zm5 0v9a1 1 0 002 0v-9a1 1 0 00-2 0z"/>
+            </svg>
+        </div>
+        Full: <a href="{{ .Full }}" target="_blank">{{ .Full }}</a>&nbsp;&nbsp;&nbsp;
+        Short: <a href="{{ .Short }}" target="_blank">{{ .Short }}</a>
+        <div id="ci-{{ .Id }}" class="htmx-indicator">
+          <img src="/images/bars.svg" alt="loading" style="width: 1rem">
+        </div>
+    </div>
+{{ end }}
+
+{{ block "oob-link" . }}
+   <div id="links" hx-swap-oob="afterbegin">
+     {{ template "link" . }}
+   </div>
+{{ end }}
