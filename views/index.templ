@@ -1,11 +1,11 @@
 package views
 
 import (
-    "github.com/fredeom/shortlinks/services"
     "strconv"
+	"github.com/fredeom/shortlinks/services"
 )
 
-templ Index(p services.Page) {
+templ Index(f services.FormData, d services.Data) {
     <!DOCTYPE html>
     <html>
         <head>
@@ -13,9 +13,11 @@ templ Index(p services.Page) {
             <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
         </head>
         <body>
-            @Form(p.Form)
+            @Form(f)
             <hr />
-            @Display(p.Data)
+            <div id="visitors"></div>
+            <hr />
+            @Display(d)
             <script>
                 document.addEventListener("DOMContentLoaded", (event) => {
                     document.body.addEventListener("htmx:beforeSwap", function(evt) {
@@ -50,11 +52,11 @@ templ Display(d services.Data) {
 }
 
 templ Link(l services.Link) {
-    <div class="link" id={"link-" + strconv.Itoa(l.Id)} style="display: flex">
-        <div hx-delete={"/links/" + strconv.Itoa(l.Id)}
+    <div class="link" id={"link-" + strconv.Itoa(l.ID)} style="display: flex">
+        <div hx-delete={"/links/" + strconv.Itoa(l.ID)}
              hx-swap="outerHTML swap:500ms"
-             hx-target={"#link-" + strconv.Itoa(l.Id)}
-             hx-indicator={"#ci-" + strconv.Itoa(l.Id)}
+             hx-target={"#link-" + strconv.Itoa(l.ID)}
+             hx-indicator={"#ci-" + strconv.Itoa(l.ID)}
              style="width: 1rem; cursor: pointer">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                 <path fill="none" d="M0 0h24v24H0z"/>
@@ -62,8 +64,14 @@ templ Link(l services.Link) {
             </svg>
         </div>
         Full: <a href={ templ.URL(l.Full) } target="_blank">{ l.Full }</a>&nbsp;&nbsp;&nbsp;
-        Short: <a href={ templ.URL(l.Short) } target="_blank">{ l.Short }</a>
-        <div id={"ci-" + strconv.Itoa(l.Id)} class="htmx-indicator">
+        Short: <a href={ templ.URL(l.Short) } target="_blank">{ l.Short }</a>&nbsp;&nbsp;&nbsp;
+        Hits: { l.Hits }&nbsp;&nbsp;&nbsp;
+        Created At: { l.CreatedAt.Local().String() }&nbsp;&nbsp;&nbsp;
+        <button
+            hx-get={"/visitors/" + strconv.Itoa(l.ID)}
+            hx-target="#visitors"
+            >Show Visitors</button>
+        <div id={"ci-" + strconv.Itoa(l.ID)} class="htmx-indicator">
           <img src="/images/bars.svg" alt="loading" style="width: 1rem" />
         </div>
     </div>
@@ -72,5 +80,15 @@ templ Link(l services.Link) {
 templ OobLink(l services.Link) {
     <div id="links" hx-swap-oob="afterbegin">
         @Link(l)
-   </div>
+    </div>
+}
+
+templ Visitors(visitors services.Visitors) {
+    <div id="visitors">
+        for _, v := range visitors {
+            <div>
+                { v.Agent }
+            </div>
+        }
+    </div>
 }
